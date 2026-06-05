@@ -17,8 +17,15 @@ public static class DependencyInjection
     {
         services.Configure<ApiNinjasOptions>(configuration.GetSection(ApiNinjasOptions.SectionName));
 
+        var connectionString = configuration.GetConnectionString("DefaultConnection");
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            throw new InvalidOperationException(
+                "Connection string 'DefaultConnection' is not configured. Set ConnectionStrings:DefaultConnection in appsettings.json, appsettings.Development.json, user secrets, or an environment variable.");
+        }
+
         services.AddDbContext<AutomantriDbContext>(options =>
-            options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
+            options.UseNpgsql(connectionString));
 
         services.AddHttpClient<IApiNinjasCarsClient, ApiNinjasCarsClient>();
         services.AddScoped<ICarRepository, CarRepository>();
