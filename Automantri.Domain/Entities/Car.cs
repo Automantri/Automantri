@@ -15,6 +15,15 @@ public sealed class Car
     public string Model { get; set; } = string.Empty;
     public string? Transmission { get; set; }
     public int Year { get; set; }
+    public string? Trim { get; set; }
+    public string? Generation { get; set; }
+    public string? Serie { get; set; }
+    public string? CarType { get; set; }
+    public int? StartProductionYear { get; set; }
+    public int? EndProductionYear { get; set; }
+    public string? SpecificationsJson { get; set; }
     public string SourceQuery { get; set; } = string.Empty;
+    public string? ImageUrl { get; set; }
     public DateTimeOffset RetrievedAtUtc { get; set; }
+    public DateTimeOffset UpdatedAtUtc { get; set; }
 }

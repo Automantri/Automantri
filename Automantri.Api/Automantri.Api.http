@@ -1,6 +1,21 @@
 @Automantri.Api_HostAddress = http://localhost:5230
 
-POST {{Automantri.Api_HostAddress}}/api/cars/import?model=camry
+GET {{Automantri.Api_HostAddress}}/api/cars/makes
+Accept: application/json
+
+###
+
+GET {{Automantri.Api_HostAddress}}/api/cars/makes/toyota/models
+Accept: application/json
+
+###
+
+POST {{Automantri.Api_HostAddress}}/api/cars/sync/catalog
+Accept: application/json
+
+###
+
+POST {{Automantri.Api_HostAddress}}/api/cars/sync?make=toyota&model=camry
 Accept: application/json
 
 ###

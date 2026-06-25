@@ -16,8 +16,17 @@ public sealed record CarDto(
     string Model,
     string? Transmission,
     int Year,
+    string? Trim,
+    string? Generation,
+    string? Serie,
+    string? CarType,
+    int? StartProductionYear,
+    int? EndProductionYear,
+    string? SpecificationsJson,
     string SourceQuery,
-    DateTimeOffset RetrievedAtUtc)
+    string? ImageUrl,
+    DateTimeOffset RetrievedAtUtc,
+    DateTimeOffset UpdatedAtUtc)
 {
     public static CarDto FromEntity(Car car)
     {
@@ -35,7 +44,16 @@ public sealed record CarDto(
             car.Model,
             car.Transmission,
             car.Year,
+            car.Trim,
+            car.Generation,
+            car.Serie,
+            car.CarType,
+            car.StartProductionYear,
+            car.EndProductionYear,
+            car.SpecificationsJson,
             car.SourceQuery,
-            car.RetrievedAtUtc);
+            car.ImageUrl,
+            car.RetrievedAtUtc,
+            car.UpdatedAtUtc);
     }
 }

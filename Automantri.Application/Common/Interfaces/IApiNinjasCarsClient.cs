@@ -4,5 +4,8 @@ namespace Automantri.Application.Common.Interfaces;
 
 public interface IApiNinjasCarsClient
 {
-    Task<IReadOnlyCollection<Car>> GetCarsByModelAsync(string model, CancellationToken cancellationToken);
+    Task<IReadOnlyCollection<Car>> GetCarsAsync(
+        string make,
+        string model,
+        CancellationToken cancellationToken);
 }

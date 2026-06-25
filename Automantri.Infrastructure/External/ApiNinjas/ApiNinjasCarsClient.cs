@@ -2,6 +2,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Automantri.Application.Common.Interfaces;
 using Automantri.Domain.Entities;
+using Automantri.Infrastructure.External.ApiNinjas;
 using Microsoft.Extensions.Options;
 
 namespace Automantri.Infrastructure.External.ApiNinjas;
@@ -10,29 +11,29 @@ internal sealed class ApiNinjasCarsClient(
     HttpClient httpClient,
     IOptions<ApiNinjasOptions> options) : IApiNinjasCarsClient
 {
-    public async Task<IReadOnlyCollection<Car>> GetCarsByModelAsync(
+    public async Task<IReadOnlyCollection<Car>> GetCarsAsync(
+        string make,
         string model,
         CancellationToken cancellationToken)
     {
         var apiOptions = options.Value;
-        using var request = new HttpRequestMessage(
-            HttpMethod.Get,
-            $"{apiOptions.BaseUrl}?model={Uri.EscapeDataString(model)}");
+        var query = $"?make={Uri.EscapeDataString(make)}&model={Uri.EscapeDataString(model)}";
+        var cars = await ApiNinjasHttp.SendAsync<ApiNinjasCarResponse[]>(
+            httpClient,
+            apiOptions.ApiKey,
+            $"{apiOptions.CarsUrl}{query}",
+            cancellationToken) ?? [];
 
-        request.Headers.Add("X-Api-Key", apiOptions.ApiKey);
-        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        return cars
+            .Select(MapToEntity)
+            .Where(car => car.Year > 0)
+            .ToArray();
+    }
 
-        using var response = await httpClient.SendAsync(request, cancellationToken);
-        response.EnsureSuccessStatusCode();
-
-        var cars = await response.Content.ReadFromJsonAsync<ApiNinjasCarResponse[]>(cancellationToken)
-            ?? [];
-
-        var retrievedAtUtc = DateTimeOffset.UtcNow;
-
-        return cars.Select(car => new Car
+    private static Car MapToEntity(ApiNinjasCarResponse car)
+    {
+        return new Car
         {
-            Id = Guid.NewGuid(),
             CityMpg = car.CityMpg,
             VehicleClass = car.VehicleClass ?? string.Empty,
             CombinationMpg = car.CombinationMpg,
@@ -44,9 +45,7 @@ internal sealed class ApiNinjasCarsClient(
             Make = car.Make ?? string.Empty,
             Model = car.Model ?? string.Empty,
             Transmission = car.Transmission,
-            Year = car.Year,
-            SourceQuery = model,
-            RetrievedAtUtc = retrievedAtUtc
-        }).ToArray();
+            Year = car.Year
+        };
     }
 }

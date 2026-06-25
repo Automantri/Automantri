@@ -1,6 +1,8 @@
 using Automantri.Application.Cars;
 using Automantri.Application.Common.Interfaces;
+using Automantri.Infrastructure.Cars;
 using Automantri.Infrastructure.External.ApiNinjas;
+using Automantri.Infrastructure.External.CarImages;
 using Automantri.Infrastructure.Persistence;
 using Automantri.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -16,6 +18,8 @@ public static class DependencyInjection
         IConfiguration configuration)
     {
         services.Configure<ApiNinjasOptions>(configuration.GetSection(ApiNinjasOptions.SectionName));
+        services.Configure<CarSyncOptions>(configuration.GetSection(CarSyncOptions.SectionName));
+        services.Configure<CarImagesOptions>(configuration.GetSection(CarImagesOptions.SectionName));
 
         var connectionString = configuration.GetConnectionString("DefaultConnection");
         if (string.IsNullOrWhiteSpace(connectionString))
@@ -28,8 +32,12 @@ public static class DependencyInjection
             options.UseNpgsql(connectionString));
 
         services.AddHttpClient<IApiNinjasCarsClient, ApiNinjasCarsClient>();
+        services.AddHttpClient<IApiNinjasCatalogClient, ApiNinjasCatalogClient>();
+        services.AddSingleton<ICarImageResolver, CarImageResolver>();
         services.AddScoped<ICarRepository, CarRepository>();
+        services.AddScoped<ICarSyncService, CarSyncService>();
         services.AddScoped<ICarSearchService, CarSearchService>();
+        services.AddHostedService<CarSyncBackgroundService>();
 
         return services;
     }
