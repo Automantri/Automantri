@@ -1,5 +1,6 @@
 using Automantri.Application.Cars;
 using Automantri.Application.Common.Interfaces;
+using Automantri.Application.Frontend;
 using Automantri.Infrastructure.Cars;
 using Automantri.Infrastructure.External.ApiNinjas;
 using Automantri.Infrastructure.External.CarImages;
@@ -37,6 +38,9 @@ public static class DependencyInjection
         services.AddScoped<ICarRepository, CarRepository>();
         services.AddScoped<ICarSyncService, CarSyncService>();
         services.AddScoped<ICarSearchService, CarSearchService>();
+        services.AddSingleton<ICarEnrichmentService, CarEnrichmentService>();
+        services.AddScoped<IFrontendCarService, FrontendCarService>();
+        services.AddSingleton<IContentService, ContentService>();
         services.AddHostedService<CarSyncBackgroundService>();
 
         return services;

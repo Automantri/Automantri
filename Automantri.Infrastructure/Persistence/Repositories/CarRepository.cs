@@ -57,6 +57,106 @@ internal sealed class CarRepository(AutomantriDbContext dbContext) : ICarReposit
             .ToArrayAsync(cancellationToken);
     }
 
+    public async Task<Car?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
+    {
+        return await dbContext.Cars
+            .AsNoTracking()
+            .FirstOrDefaultAsync(car => car.Id == id, cancellationToken);
+    }
+
+    public async Task<IReadOnlyCollection<Car>> GetByIdsAsync(
+        IReadOnlyCollection<Guid> ids,
+        CancellationToken cancellationToken)
+    {
+        if (ids.Count == 0)
+        {
+            return [];
+        }
+
+        return await dbContext.Cars
+            .AsNoTracking()
+            .Where(car => ids.Contains(car.Id))
+            .ToArrayAsync(cancellationToken);
+    }
+
+    public async Task<(IReadOnlyCollection<Car> Items, int TotalCount)> SearchAsync(
+        string? search,
+        string? make,
+        string? model,
+        string? fuelType,
+        string? vehicleClass,
+        string? transmission,
+        int? yearFrom,
+        int? yearTo,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken)
+    {
+        var query = dbContext.Cars.AsNoTracking().AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim().ToLowerInvariant();
+            query = query.Where(car =>
+                car.Make.ToLower().Contains(term) ||
+                car.Model.ToLower().Contains(term) ||
+                (car.Trim != null && car.Trim.ToLower().Contains(term)) ||
+                car.VehicleClass.ToLower().Contains(term));
+        }
+
+        if (!string.IsNullOrWhiteSpace(make))
+        {
+            var makeTerm = make.Trim().ToLowerInvariant();
+            query = query.Where(car => car.Make.ToLower() == makeTerm);
+        }
+
+        if (!string.IsNullOrWhiteSpace(model))
+        {
+            var modelTerm = model.Trim().ToLowerInvariant();
+            query = query.Where(car => car.Model.ToLower() == modelTerm);
+        }
+
+        if (!string.IsNullOrWhiteSpace(fuelType))
+        {
+            var fuelTerm = fuelType.Trim().ToLowerInvariant();
+            query = query.Where(car => car.FuelType != null && car.FuelType.ToLower().Contains(fuelTerm));
+        }
+
+        if (!string.IsNullOrWhiteSpace(vehicleClass))
+        {
+            var classTerm = vehicleClass.Trim().ToLowerInvariant();
+            query = query.Where(car => car.VehicleClass.ToLower().Contains(classTerm));
+        }
+
+        if (!string.IsNullOrWhiteSpace(transmission))
+        {
+            var transmissionTerm = transmission.Trim().ToLowerInvariant();
+            query = query.Where(car => car.Transmission != null && car.Transmission.ToLower().Contains(transmissionTerm));
+        }
+
+        if (yearFrom is not null)
+        {
+            query = query.Where(car => car.Year >= yearFrom);
+        }
+
+        if (yearTo is not null)
+        {
+            query = query.Where(car => car.Year <= yearTo);
+        }
+
+        var totalCount = await query.CountAsync(cancellationToken);
+        var items = await query
+            .OrderByDescending(car => car.UpdatedAtUtc)
+            .ThenBy(car => car.Make)
+            .ThenBy(car => car.Model)
+            .ThenBy(car => car.Year)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToArrayAsync(cancellationToken);
+
+        return (items, totalCount);
+    }
+
     public Task SaveChangesAsync(CancellationToken cancellationToken)
     {
         return dbContext.SaveChangesAsync(cancellationToken);
