@@ -204,7 +204,7 @@ public sealed class FrontendCarService(
                 return new BrandDto(
                     make.ToLowerInvariant(),
                     title,
-                    $"https://logo.clearbit.com/{make.ToLowerInvariant()}.com",
+                    $"https://www.google.com/s2/favicons?domain={make.ToLowerInvariant()}.com&sz=128",
                     "Global",
                     g.Select(c => c.Model)
                         .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -276,8 +276,52 @@ public sealed class FrontendCarService(
         }
 
         var allCars = await carRepository.GetAllAsync(cancellationToken);
-        return allCars.FirstOrDefault(car =>
+        var exact = allCars.FirstOrDefault(car =>
             CarEnrichmentService.BuildSlug(car).Equals(id, StringComparison.OrdinalIgnoreCase));
+        if (exact is not null)
+        {
+            return exact;
+        }
+
+        // Allow make-model slugs without year (e.g. "toyota-camry" → latest toyota camry).
+        var prefixMatches = allCars
+            .Where(car =>
+            {
+                var slug = CarEnrichmentService.BuildSlug(car);
+                return slug.StartsWith(id + "-", StringComparison.OrdinalIgnoreCase) ||
+                       slug.Equals(id, StringComparison.OrdinalIgnoreCase);
+            })
+            .OrderByDescending(car => car.Year)
+            .ToArray();
+        if (prefixMatches.Length > 0)
+        {
+            return prefixMatches[0];
+        }
+
+        // Allow loose "brand-model" lookup from path segments.
+        var parts = id.Split('-', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (parts.Length >= 2)
+        {
+            var makeHint = parts[0];
+            var modelHint = string.Join('-', parts.Skip(1).TakeWhile(p => !p.All(char.IsDigit)));
+            if (string.IsNullOrWhiteSpace(modelHint) && parts.Length >= 2)
+            {
+                modelHint = parts[1];
+            }
+
+            var loose = allCars
+                .Where(car =>
+                    car.Make.Contains(makeHint, StringComparison.OrdinalIgnoreCase) &&
+                    car.Model.Replace(" ", "-").Contains(modelHint, StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(car => car.Year)
+                .FirstOrDefault();
+            if (loose is not null)
+            {
+                return loose;
+            }
+        }
+
+        return null;
     }
 
     private async Task<IReadOnlyCollection<Car>> ResolveCarsAsync(

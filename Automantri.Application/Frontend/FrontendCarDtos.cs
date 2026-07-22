@@ -224,6 +224,27 @@ public sealed record PlatformStatsDto(
     string TotalSavings,
     int CarsCompared);
 
+public sealed record JourneyStepDto(
+    string Id,
+    int Order,
+    string Phase,
+    string Title,
+    string Description,
+    string CtaLink,
+    string Icon);
+
+public sealed record JourneySectionDto(
+    string Eyebrow,
+    string Title,
+    string TitleHighlight,
+    string Subtitle,
+    string CtaTitle,
+    string CtaSubtitle,
+    string CtaLabel,
+    string CtaLink,
+    IReadOnlyList<string> TrustItems,
+    IReadOnlyList<JourneyStepDto> Steps);
+
 public sealed record TestDriveRequestDto(
     string CarId,
     string Name,

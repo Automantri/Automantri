@@ -21,4 +21,9 @@ public sealed class ContentController(IContentService contentService) : Controll
     [ProducesResponseType<PlatformStatsDto>(StatusCodes.Status200OK)]
     public ActionResult<PlatformStatsDto> GetStats() =>
         Ok(contentService.GetPlatformStats());
+
+    [HttpGet("journey")]
+    [ProducesResponseType<JourneySectionDto>(StatusCodes.Status200OK)]
+    public ActionResult<JourneySectionDto> GetJourney() =>
+        Ok(contentService.GetJourney());
 }

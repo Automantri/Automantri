@@ -64,7 +64,7 @@ public sealed class CarEnrichmentService : ICarEnrichmentService
             car.Id,
             list.Brand,
             list.Model,
-            car.Trim ?? $"{list.Model} Base",
+            car.Trim ?? "Base",
             car.Year,
             list.PriceValue,
             onRoad,
@@ -138,7 +138,7 @@ public sealed class CarEnrichmentService : ICarEnrichmentService
 
     public CarVariantDto ToVariant(CarDto car, bool recommended) =>
         new(
-            car.Trim ?? $"{TitleCase(car.Model)} {car.Year}",
+            string.IsNullOrWhiteSpace(car.Trim) ? $"{car.Year} Base" : car.Trim!,
             EstimatePrice(car),
             MapFuelType(car.FuelType),
             MapTransmission(car.Transmission),
@@ -149,7 +149,7 @@ public sealed class CarEnrichmentService : ICarEnrichmentService
     {
         var authors = new[] { "Arjun M.", "Deepa K.", "Rohan S.", "Meera P.", "Karan V." };
         var locations = new[] { "Mumbai", "Bangalore", "Delhi", "Hyderabad", "Pune" };
-        var hash = Hash($"{car.Id}:{index}");
+        var hash = Math.Abs(Hash($"{car.Id}:{index}"));
         var author = authors[hash % authors.Length];
         var location = locations[(hash / 7) % locations.Length];
         var rating = DeterministicRating(car.Id, 3.8, 5.0) + (index % 3) * 0.1;
