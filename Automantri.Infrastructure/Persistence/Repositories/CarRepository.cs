@@ -162,6 +162,27 @@ internal sealed class CarRepository(AutomantriDbContext dbContext) : ICarReposit
         return dbContext.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task<int> DeleteByIdsAsync(
+        IReadOnlyCollection<Guid> ids,
+        CancellationToken cancellationToken)
+    {
+        if (ids.Count == 0)
+        {
+            return 0;
+        }
+
+        var cars = await dbContext.Cars
+            .Where(car => ids.Contains(car.Id))
+            .ToListAsync(cancellationToken);
+        if (cars.Count == 0)
+        {
+            return 0;
+        }
+
+        dbContext.Cars.RemoveRange(cars);
+        return cars.Count;
+    }
+
     private static void ApplyValues(Car existing, Car incoming)
     {
         existing.CityMpg = incoming.CityMpg;

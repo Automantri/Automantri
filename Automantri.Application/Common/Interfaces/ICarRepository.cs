@@ -21,6 +21,7 @@ public interface ICarRepository
         int pageSize,
         CancellationToken cancellationToken);
     Task SaveChangesAsync(CancellationToken cancellationToken);
+    Task<int> DeleteByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken);
 }
 
 public sealed record CarUpsertResult(int InsertedCount, int UpdatedCount);

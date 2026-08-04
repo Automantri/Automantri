@@ -23,7 +23,7 @@ internal sealed class CarConfiguration : IEntityTypeConfiguration<Car>
         builder.Property(car => car.HighwayMpg).HasColumnName("highway_mpg");
         builder.Property(car => car.Make).HasColumnName("make").HasMaxLength(120);
         builder.Property(car => car.Model).HasColumnName("model").HasMaxLength(120);
-        builder.Property(car => car.Transmission).HasColumnName("transmission").HasMaxLength(20);
+        builder.Property(car => car.Transmission).HasColumnName("transmission").HasMaxLength(80);
         builder.Property(car => car.Year).HasColumnName("year");
         builder.Property(car => car.Trim).HasColumnName("trim").HasMaxLength(200);
         builder.Property(car => car.Generation).HasColumnName("generation").HasMaxLength(200);

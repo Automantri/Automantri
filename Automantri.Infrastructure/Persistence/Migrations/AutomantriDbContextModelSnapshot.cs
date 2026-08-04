@@ -115,8 +115,8 @@ namespace Automantri.Infrastructure.Persistence.Migrations
                         .HasColumnName("start_production_year");
 
                     b.Property<string>("Transmission")
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
                         .HasColumnName("transmission");
 
                     b.Property<string>("Trim")
