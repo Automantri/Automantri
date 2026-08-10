@@ -94,14 +94,51 @@ internal sealed class CarRepository(AutomantriDbContext dbContext) : ICarReposit
     {
         var query = dbContext.Cars.AsNoTracking().AsQueryable();
 
+        string? brandBoostToken = null;
+        string? modelBoostToken = null;
+
         if (!string.IsNullOrWhiteSpace(search))
         {
-            var term = search.Trim().ToLowerInvariant();
-            query = query.Where(car =>
-                car.Make.ToLower().Contains(term) ||
-                car.Model.ToLower().Contains(term) ||
-                (car.Trim != null && car.Trim.ToLower().Contains(term)) ||
-                car.VehicleClass.ToLower().Contains(term));
+            var tokens = CarSearchText.Tokenize(search);
+
+            // Every token must match somewhere across make / model / trim / class / fuel / year.
+            // "alcazar" → model; "hyundai alcazar" / "hyundi alcazar" → make + model.
+            foreach (var token in tokens)
+            {
+                var t = token;
+                if (int.TryParse(t, out var yearToken) && yearToken is >= 1990 and <= 2100)
+                {
+                    query = query.Where(car =>
+                        car.Year == yearToken ||
+                        car.Make.ToLower().Contains(t) ||
+                        car.Model.ToLower().Contains(t) ||
+                        (car.Trim != null && car.Trim.ToLower().Contains(t)));
+                }
+                else
+                {
+                    query = query.Where(car =>
+                        car.Make.ToLower().Contains(t) ||
+                        car.Model.ToLower().Contains(t) ||
+                        (car.Make.ToLower() + " " + car.Model.ToLower()).Contains(t) ||
+                        (car.Trim != null && car.Trim.ToLower().Contains(t)) ||
+                        car.VehicleClass.ToLower().Contains(t) ||
+                        (car.FuelType != null && car.FuelType.ToLower().Contains(t)));
+                }
+            }
+
+            if (tokens.Count >= 1)
+            {
+                brandBoostToken = tokens[0];
+            }
+
+            if (tokens.Count >= 2)
+            {
+                modelBoostToken = tokens[^1];
+            }
+            else if (tokens.Count == 1)
+            {
+                modelBoostToken = tokens[0];
+            }
         }
 
         if (!string.IsNullOrWhiteSpace(make))
@@ -145,11 +182,43 @@ internal sealed class CarRepository(AutomantriDbContext dbContext) : ICarReposit
         }
 
         var totalCount = await query.CountAsync(cancellationToken);
-        var items = await query
-            .OrderByDescending(car => car.UpdatedAtUtc)
-            .ThenBy(car => car.Make)
-            .ThenBy(car => car.Model)
-            .ThenBy(car => car.Year)
+
+        // Prefer rows where early tokens look like brand and later tokens like model.
+        IOrderedQueryable<Car> ordered;
+        if (!string.IsNullOrWhiteSpace(brandBoostToken) && !string.IsNullOrWhiteSpace(modelBoostToken) &&
+            !string.Equals(brandBoostToken, modelBoostToken, StringComparison.Ordinal))
+        {
+            var brandToken = brandBoostToken;
+            var modelToken = modelBoostToken;
+            ordered = query
+                .OrderByDescending(car => car.Make.ToLower().Contains(brandToken) ? 1 : 0)
+                .ThenByDescending(car => car.Model.ToLower().Contains(modelToken) ? 1 : 0)
+                .ThenByDescending(car => car.UpdatedAtUtc)
+                .ThenBy(car => car.Make)
+                .ThenBy(car => car.Model)
+                .ThenBy(car => car.Year);
+        }
+        else if (!string.IsNullOrWhiteSpace(modelBoostToken))
+        {
+            var modelToken = modelBoostToken;
+            ordered = query
+                .OrderByDescending(car => car.Model.ToLower().Contains(modelToken) ? 2 :
+                    car.Make.ToLower().Contains(modelToken) ? 1 : 0)
+                .ThenByDescending(car => car.UpdatedAtUtc)
+                .ThenBy(car => car.Make)
+                .ThenBy(car => car.Model)
+                .ThenBy(car => car.Year);
+        }
+        else
+        {
+            ordered = query
+                .OrderByDescending(car => car.UpdatedAtUtc)
+                .ThenBy(car => car.Make)
+                .ThenBy(car => car.Model)
+                .ThenBy(car => car.Year);
+        }
+
+        var items = await ordered
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToArrayAsync(cancellationToken);
